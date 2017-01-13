@@ -1,0 +1,36 @@
+# Makefile for profile
+#
+# Identifies source files for the PROFILE package
+
+OBJECTS=\
+	kind_def.o sz_globals.o maths.o cosmology.o physics.o astronomy.o \
+	file_handling.o kgraph.o map_handling.o plot_handling.o \
+	fits_handling.o define_telescope.o run_cmd.o \
+	fft.o mikes_fft.o primary_beam.o \
+        get_geometry.o get_cluster_model.o Te_map_ams.o \
+	make_cluster.o make_cluster_gnfw.o make_aperture.o \
+	make_model_xray_map.o make_source_population.o \
+	extract_visibility.o \
+	lensing.o plot_scaling.o metromod.o metromod_betamod.o\
+	fill_visibilities.o two_d_tempmap.o\
+	model_fn.o mcg_xray.o mcg_x_fit.o \
+	fit_visibilities.o show_cluster_parms.o \
+	structures.o stuff.o minimum.o bayesian.o bubbles.o\
+	make_test_sky.o make_pointed_observation.o likelihood.o  \
+        batchbay.o helptext.o \
+	scatter_random_sources.o estimate_source_conf.o project_cluster.o \
+	calc_basel.o calc_uvw.o  \
+	monte-carlo-primordial-effect.o  \
+	graphics_ops.o fits_open.o fits_close.o set_history.o fits_wrant.o \
+	fits_wrhdr.o fits_wrmhd.o fits_write.o fits_fill.o \
+	fits_wrsu.o  calc_vis.o\
+	make_mosaic_observation.o hypergeometric2.o \
+        cygnus_x_mosaic.o oneDFT.o proposal.o  \
+	overlay_mosaic.o pointing_power.o \
+	make_cmb_sky.o wproj.o gridder.o calc_bmamp.o \
+	LFIT.o subtract_sources.o \
+	define_xray_telescope.o \
+	make_model_from_poly.o \
+	make_model_from_file.o make_model_beta.o make_model_temp_halo.o \
+	read_sz_sky.o combine_maps.o plot_source_confusion.o combine_maps_gal.o
+

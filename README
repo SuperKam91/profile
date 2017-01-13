@@ -1,0 +1,12 @@
+Git copy of the PROFILE package, used for simulating AMI observations (amongst other things).
+
+This software currently only works on the Cavendish machines due to external dependencies.  Versions for Solaris and Linux are built by, e.g.:
+
+  mraosa> make -f Makefile.sun clean
+  mraosa> make -f Makefile.sun
+
+  appcs> make -f Makefile.linux clean
+  appcs> make -f Makefile.linux
+
+The executables end up as profile.[sun,linux] in this directory.  The commands 'help', 'explain-profile', and 'explain-command' will give you (some) help.
+

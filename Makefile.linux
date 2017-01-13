@@ -1,0 +1,51 @@
+# Makefile for profile
+#
+# This version for Linux, 10/05/10
+
+FCOMPL=/usr/bin/g77 -m32
+FCOM90=gfortran -m32
+FFLAGC=-u -Wall -ff2c -fPIC -O
+
+BINDIR=/ami/bin/linux-x86
+OLDBIN=/ami/bin/linux-x86/old
+LIBDIR=/ami/lib/linux-x86
+X11LIB=/usr/X11R6/lib
+BLDDIR=./
+
+LIBS=-L/mrao/lib -lutil -lio -lch -lpgplot -L$(X11LIB) -lX11
+
+SOURCE_FILES=./make_sources
+
+include $(SOURCE_FILES)
+
+.SUFFIXES : .f90
+
+.f.o:
+	$(FCOMPL) -c $(FFLAGC) $<
+
+.f90.o:
+	$(FCOM90) -c $(FFLAGC) $<
+
+all: profile
+
+libprofile.a : $(OBJECTS)
+	ar ru libprofile.a $(OBJECTS)
+
+profile: profile.f90 libprofile.a 
+	$(FCOM90) $(FFLAGC) -o profile.linux profile.f90 \
+        -L$(BLDDIR) -lprofile \
+        -L$(LIBDIR) -lsla -lnag77 -lcfitsio $(LIBS)
+	ln -s profile.linux profile
+	chmod g+w *.o *.mod *.a profile.linux
+
+install: profile
+	mv $(BINDIR)/profile $(OLDBIN)/profile
+	cp -p profile.linux $(BINDIR)/profile
+	chmod g+w $(BINDIR)/profile
+
+previous:
+	mv $(OLDBIN)/profile $(BINDIR)/profile
+
+clean:  
+	rm profile.linux profile *.o *.mod *.a
+

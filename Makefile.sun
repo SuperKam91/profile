@@ -1,0 +1,47 @@
+# Makefile for profile
+
+FCOMPL=f90
+
+INCDIR=/ami/include
+BINDIR=/ami/bin
+OLDBIN=/ami/bin/old
+LIBDIR=/ami/lib
+BLDDIR=./
+
+SOURCE_FILES=./make_sources
+
+include $(SOURCE_FILES)
+
+.f90.o:
+	$(FCOMPL) -c $<
+
+#LIBOBJECTS = kind_def.o kgraph.o kio.o maths.o 
+
+all: profile
+
+#libkf90.a : $(LIBOBJECTS) 
+#        ar ru libwf90.a $(LIBOBJECTS) 
+
+libprofile.a : $(OBJECTS)
+	ar ru libprofile.a $(OBJECTS)
+
+profile: profile.f90 libprofile.a 
+	f90 profile.f90 -o profile.sun \
+	-M$(BLDDIR) \
+        -L$(BLDDIR) -lprofile \
+	-L/mrao/lib -lsla -lio -lch -lutil -lfitsio `pgplotlink` -lnag \
+	-lF77 -lf77compat 
+	ln -s profile.sun profile
+	chmod g+w *.o *.mod *.a profile.sun
+
+install: profile
+	mv $(BINDIR)/profile $(OLDBIN)/profile
+	cp -p profile.sun $(BINDIR)/profile
+	chmod g+w $(BINDIR)/profile
+
+previous:
+	mv $(OLDBIN)/profile $(BINDIR)/profile
+
+clean:  
+	rm profile.sun profile *.o *.mod *.a
+
