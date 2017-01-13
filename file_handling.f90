@@ -465,7 +465,7 @@ contains
 ! Ask for file name
       prompt = 'Telescope filename'
       which_dir = telescope_dir
-      rootname = 'ami'
+      rootname = 'amidc_sa'
       extn = '.tel'
       call get_read_filename(filename)
 
