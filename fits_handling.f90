@@ -413,10 +413,10 @@ contains
       implicit none
 
       character(len=fname_len) :: filename
-      character*80 :: name, ftcom
+      character*80 :: name, ftcom, ctype5
       integer :: iunit
       integer, parameter :: maxdim=7      
-      integer :: naxes(maxdim)
+      integer :: naxes(maxdim), nif
       integer :: group, i, j, rwstat, bksize, a, ifreq
       integer :: fpixels(maxdim), lpixels(maxdim), inc(maxdim)
       integer :: axes(6), npoints, count, b, igroup, l_tel
@@ -455,10 +455,22 @@ contains
       status = 0
       call ftgkye(iunit,'obsdec',obsdec,ftcom,status)
       status = 0
-      call ftgkye(iunit,'crval5',pb_ra,ftcom,status)
-      status = 0
-      call ftgkye(iunit,'crval6',pb_dec,ftcom,status)
-      status = 0
+      nif=1
+      call ftgkys(iunit,'ctype5',ctype5,ftcom,status)
+      if (trim(ctype5).eq.'IF') then
+        call ftgkyj(iunit,'naxis5',nif,ftcom,status)
+        status = 0
+        call ftgkye(iunit,'crval6',pb_ra,ftcom,status)
+        status = 0
+        call ftgkye(iunit,'crval7',pb_dec,ftcom,status)
+        status = 0
+      else
+        call ftgkye(iunit,'crval5',pb_ra,ftcom,status)
+        status = 0
+        call ftgkye(iunit,'crval6',pb_dec,ftcom,status)
+        status = 0
+      endif
+
       call ftgkye(iunit,'crval4',freq,ftcom,status)
       status = 0
       call ftgkye(iunit,'cdelt4',dfreq,ftcom,status)
@@ -501,11 +513,11 @@ contains
          write(*,*) 'This appears to be a multi-pointing FITS file - &
                      &not supported'
       end if
-      if (naxes(4).ne.nchan) then 
+      if (naxes(4)*nif.ne.nchan) then 
          write(*,*) &
-       'WARNING: this FITS file has a different number of frequency channels',&
-       'to the currently selected telescope; continuing but results might be',&
-       'odd....'
+       'WARNING: this FITS file has a different number of frequency channels (',naxes(4)*nif,&
+       ') to the currently selected telescope (', nchan, '); continuing but results might be',&
+       ' odd....'
       end if
 
       write(*,*) 'Reading uv data'
@@ -1434,7 +1446,7 @@ contains
 
       if (chr_match(tel_name,'LA')) then
          write (value, '(A)') 'AMI-LA'
-      elseif (chr_match(tel_name,'LA')) then
+      elseif (chr_match(tel_name,'SA')) then
          value='AMI-SA'
       else
          value='AMI-SA'
