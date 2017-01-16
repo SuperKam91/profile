@@ -146,14 +146,23 @@ contains
       where (fits_map.ne.fits_map) fits_map=0.0
 
       scale = 1.0
-      call subim(fits_map, p_sky, incell, cellsize, nx, ny, &
+      call subim(fits_map, temp_sky, incell, cellsize, nx, ny, &
                  maxsize,scale,surface_brightness)
 !      write(*,*) 'Exiting subim'
       deallocate (fits_map)
       deallocate (ivalue)
 
 ! Set BLANKed regions to 0
-      where (p_sky.ne.p_sky) p_sky=0.0
+      where (temp_sky.ne.temp_sky) temp_sky=0.0
+
+! Put map into all channels if required
+      if (flag_nd.eq.3) then
+        do i = 1, nchan
+          p3_sky(:,:,i) = temp_sky
+        end do
+      else
+        p_sky = temp_sky
+      end if
 
    end subroutine read_fits_map
 

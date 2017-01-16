@@ -275,7 +275,11 @@ program profile
          call get_read_filename(fits_file)
          call read_fits_map(fits_file)
 
-         xsum = sum(p_sky)
+         if (flag_nd.eq.3) then
+           xsum=sum(p3_sky(:,:,1))
+         else
+           xsum = sum(p_sky)
+         endif
          write(*,*) 'Total flux in map is ',xsum
 
 ! 'Display-map'
