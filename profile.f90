@@ -95,21 +95,22 @@ program profile
 ! Define initial telescope
    which_tel = 'd'
    l_dir  = chr_lenb(telescope_dir)
-   filename = telescope_dir(1:l_dir)//'ami.tel'
+   filename = telescope_dir(1:l_dir)//'amidc_sa.tel'
    call read_telescope(filename,errorcode)
    if (errorcode.ne.0) then
       write(*,*) 'NB no telescope defined'
+   else
+      write(*,*) 'Default telescope parameters read from '//trim(filename)
    end if
    tel_name = 'SA'
    chan = nchan/2+1
    call calc_basel
    cent_fwhm = const_c/(obsfreq*dish_diameter*sec2rad)
-   which_pb = 'g'
-   do chan = 1,nchan
-      fwhm(chan) = cent_fwhm*obsfreq/nu(chan)
+   which_pb = 'a'
+   do chan = 1, nchan
+      fwhm(chan) = (101.1/(nu(chan)*1d-9) + 1.89)*2.*sqrt(2.*log(2.))*60.
    end do
    n_pol = 1
-   tel_lat = 52.15*deg2rad
 
 ! Initial map sizes
    maxsize = 512
