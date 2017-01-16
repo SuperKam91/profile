@@ -2,4 +2,6 @@
 *.o
 *.a
 *~
+profile.linux
+profile.sun
 
