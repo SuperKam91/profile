@@ -10,7 +10,7 @@ subroutine make_test_sky
 
    character*1 :: chr1
    real(kind=dp) :: alpha, sig_lev, d_ra, d_dec, x1, y1, gau_val
-   real(kind=dp) :: sigma, rad, gau_fwhm, c_rad
+   real(kind=dp) :: sigma, rad, gau_fwhm, c_rad, ring_rad, ring_wid
    real(kind=dp) :: dec, ra
    real(kind=dp), dimension(maxsize) :: gau_tab
    integer :: dis_ra, dis_dec, centre, i, j, k
@@ -27,6 +27,7 @@ subroutine make_test_sky
    write(*,*) '(P)oint source'
    write(*,*) '(G)aussian source'
    write(*,*) '(D)C sky'
+   write(*,*) '(R)ing source'
    call io_getc('What type of test sky','p',chr1,status)
 
    if (overwrite) then
@@ -174,6 +175,41 @@ subroutine make_test_sky
             end if
          end do
       end do
+
+   case('r','R')
+      call io_getd('Inner radius of ring (arcsec)',&
+           & '0.0',ring_rad,status)
+      call io_getd('Width of ring (arcsec)',&
+           & '1.0', ring_wid, status)
+      call io_getd('Displacement of ring in RA (arcsec)',&
+           & '0.0',d_ra,status)
+      call io_getd('Displacement of ring in Dec (arcsec)',&
+           & '0.0',d_dec,status)
+      call io_getd('Level for ring',&
+           & '1.0',sig_lev,status)
+      if (flag_nd.eq.3) then
+         call io_getd('Radio spectral index:','0.7',alpha,status)
+      end if
+
+! put on sky
+      do i = 1, maxsize
+        do j = 1, maxsize
+! Calculate offset in ra and dec of this point in the map
+          x1 = d_ra/cellsize+(i-centre)
+          y1 = d_dec/cellsize+(j-centre)
+          rad = sqrt(x1**2+y1**2)*cellsize
+          if ((rad.gt.ring_rad).and.(rad.lt.ring_rad+ring_wid)) then
+            if (flag_nd.eq.3) then
+              do chan = 1, nchan
+                p3_sky(i,j,chan) = p3_sky(i,j,chan)+sig_lev*&
+                                  (nu(chan)/obsfreq)**(-2.-alpha) 
+              end do
+            else if (flag_nd.eq.2) then
+              p_sky(i,j) = p_sky(i,j)+sig_lev
+            end if
+          endif
+        enddo
+      enddo
 
    case default
       call io_getd('What DC level','1.0',sig_lev,status)
