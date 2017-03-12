@@ -475,9 +475,21 @@ contains
       status = 0
       call ftgkye(iunit,'cdelt4',dfreq,ftcom,status)
       status = 0
-      call ftgkye(iunit,'pscal1',uscale,ftcom,status)
+      call ftgkyd(iunit,'pscal1',uscale,ftcom,status)
       status = 0
-      call ftgkye(iunit,'pscal2',vscale,ftcom,status)
+      call ftgkyd(iunit,'pscal2',vscale,ftcom,status)
+      status = 0
+      call ftgkyd(iunit,'pscal3',wscale,ftcom,status)
+      status = 0
+      call ftgkyd(iunit,'pscal4',jdscal1,ftcom,status)
+      status = 0
+      call ftgkyd(iunit,'pzero4',jdzero,ftcom,status)
+      status = 0
+      call ftgkyd(iunit,'pscal5',jdscal2,ftcom,status)
+      if (debug) then
+        write(*,*) 'Random parameter scalings are:'
+        write(*,*) uscale, vscale, wscale, jdscal1, jdzero, jdscal2
+      endif
 
 ! Set the pointing and phase centres, RAs stored in hrs
       obs_raref = obsra/15.
@@ -523,23 +535,26 @@ contains
       write(*,*) 'Reading uv data'
       b = 1
       do igroup = 1, gcount
-         call ftggpe(iunit,igroup,1,naxis,parms,status)
+         call ftggpe(iunit,igroup,1,6,parms,status)
          call ftgsve(iunit,igroup,naxis-1,axes,fpixels,lpixels,inc,0,&
                ivalue,anyflg,status)
-         u1 = parms(1)
-         v1 = parms(2)
-         w1 = 0.
+         u1 = parms(1)*uscale
+         v1 = parms(2)*vscale
+         w1 = parms(3)*wscale
          do j = 1,npoints, 3
             ifreq = j/3+1
             u(b) = u1*nu(ifreq)
             v(b) = v1*nu(ifreq)
-            w(b) = 0.0
+            w(b) = w1*nu(ifreq)
+            jd1(b) = parms(4)*jdscal1+jdzero
+            jd2(b) = parms(5)*jdscal2
+            baseline(b) = parms(6)
             data_re(b) = ivalue(j)
             data_im(b) = ivalue(j+1)
             weight(b) = ivalue(j+2)
             rms(b) = 1./sqrt(weight(b))
             if (debug) then
-               write(*,*) b,ifreq,u(b),v(b),data_re(b),data_im(b),weight(b)
+               write(*,*) b,ifreq,u(b),v(b),jd1(b)+jd2(b),baseline(b),data_re(b),data_im(b),weight(b)
             end if
             b = b+1
          end do
@@ -1376,7 +1391,8 @@ contains
 
       basel = 1
       n_basel = n_antennas*(n_antennas-1)/2
-      ngroup = n_samp*n_basel
+      !ngroup = n_samp*n_basel
+      ngroup = gcount
 
       bitpix = -32
       naxis = 6 
@@ -1390,6 +1406,10 @@ contains
       naxisn(6) =  1
 
 
+      call util_enqdat(idate)
+!     call sla_cldj(idate(3),idate(2),idate(1),mjd1,j) 
+!     obs_mjd_start = mjd1
+
       obs_ut_start = 0.
       obs_mjd_start = 0.
       jdscal1 = 1.d0/128.d0
@@ -1398,6 +1418,9 @@ contains
       uscale = 1.0d0
       vscale = uscale
       wscale = uscale      
+      uzero  = 0.0d0
+      vzero = uzero
+      wzero = uzero
 
       sum_weight = 0.
       status = 0
@@ -1421,25 +1444,14 @@ contains
       call ftpkyj(iunit,'NAXIS4',  naxisn(4),'Number of frequencies', status) 
       call ftpkyj(iunit,'NAXIS5',  naxisn(5),'RA', status)
       call ftpkyj(iunit,'NAXIS6',  naxisn(6),'Dec', status)
-      call ftpkyl(iunit,'BLOCKED', .true., 'Tape may be blocked',status)
+      call ftpkyl(iunit,'EXTEND ', .true., 'Extension is antenna table',status)
       call ftpkyl(iunit,'GROUPS ', .true., 'Groups data structure',status)
       call ftpkyj(iunit,'PCOUNT ', pcount, 'Parameters per group',status)
       call ftpkyj(iunit,'GCOUNT ', gcount, 'Number of groups',status)
-      call ftpkyl(iunit,'EXTEND ', .true., 'Extension is antenna table',status)
-
-      !     
-
-      !call ftphpr(iunit,simple,bitpix,naxisn,naxis,pcount,gcount,extend,status)
-      !write(*,*) 'ftphpr', status, naxis, naxisn
-
-      
-
+      call ftpkyl(iunit,'BLOCKED', .true., 'Tape may be blocked',status)
 
 !  Object, telescope, date of observation
 
-      call util_enqdat(idate)
-!     call sla_cldj(idate(3),idate(2),idate(1),mjd1,j) 
-!     obs_mjd_start = mjd1
 !     source = obs_name
       if (obs_epoch.eq.1) epoch=1950.0d0
       if (obs_epoch.eq.2) epoch=2000.0d0
@@ -1463,20 +1475,11 @@ contains
       call ftpkys(iunit,'DATE-OBS', value,'Start date of observation',status)
       call ftpkys(iunit,'BUNIT', ' ','Units of data',status)
       
-!      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'BZERO', 0.0d0, -10,'Data offset',status)
-      
- !     write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'BSCALE', 1.0d0, -10,'Data = FITS*BSCALE + BZERO',status)
-      
-!      write(value,'(F10.4)'), epoch
       call ftpkyd(iunit,'EPOCH', epoch, -10,'Equinox of RA, Dec',status)
- !     write(value,'(E16.9)'), raref
       call ftpkye(iunit,'OBSRA', raref, -10,'Antenna pointing RA',status)
-!      write(value,'(F10.4)'), decref
       call ftpkye(iunit,'OBSDEC', decref, -10,'Antenna pointing DEC',status)
-
-
 
 !  Phase centre [degrees]
       raref = obs_rarot*15d0
@@ -1490,131 +1493,52 @@ contains
       if (nchan.gt.1) dfreq = nu(2)-nu(1)
 
 !  Details of group data
-      
 
       call ftpkys(iunit,'CTYPE2', 'COMPLEX ','',status)
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRVAL2', 1.0d0, -10,'',status)
-      
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CDELT2', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRPIX2', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'CROTA2', 0.0d0, -10,'',status)
-      
-
-
       call ftpkys(iunit,'CTYPE3', 'STOKES  ','Stokes parameter :',status)
-
-      write(value,'(E16.9)'), -6.0d0
       call ftpkyd(iunit,'CRVAL3', -6.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CDELT3', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRPIX3', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'CROTA3', 0.0d0, -10,'',status)
-      
-
-
       call ftpkys(iunit,'CTYPE4', 'FREQ','Frequency, Hertz',status)
-      write(value,'(E16.9)'), freq
       call ftpkyd(iunit,'CRVAL4', freq, -10,'',status)
-      
-      write(value,'(E16.9)'), dfreq
       call ftpkyd(iunit,'CDELT4', dfreq, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRPIX4', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'CROTA4', 0.0d0, -10,'',status)
-      
-
-
       call ftpkys(iunit,'CTYPE5', 'RA','Right Ascension, degrees',status)
-      write(value,'(E16.9)'), raref
       call ftpkye(iunit,'CRVAL5', raref, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CDELT5', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRPIX5', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'CROTA5', 0.0d0, -10,'',status)
-       
-
-
       call ftpkys(iunit,'CTYPE6', 'DEC','Declination, degrees',status)
-      write(value,'(E16.9)'), decref
       call ftpkye(iunit,'CRVAL6', decref, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CDELT6', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 1.0d0
       call ftpkyd(iunit,'CRPIX6', 1.0d0, -10,'',status)
-      
-      write(value,'(E16.9)'), 0.0d0
       call ftpkyd(iunit,'CROTA6', 0.0d0, -10,'',status)
        
-
-
 !  Details of group parameters
-
-!     uscale = 1.0d-10
-      uscale = 1.0d0
-      uzero  = 0.0d0
-
       call ftpkys(iunit,'PTYPE1', 'UU','U coordinate, seconds',status)
       call ftpkyd(iunit,'PSCAL1',uscale, -10,'Real = FITS*PSCAL + PZERO',status)
       call ftpkyd(iunit,'PZERO1',  uzero, -10, '',status)
-
-
-      vscale = uscale
-      vzero = 0.0d0
-
       call ftpkys(iunit,'PTYPE2', 'VV','V coordinate, seconds',status)
       call ftpkyd(iunit,'PSCAL2',vscale, -10,'Real = FITS*PSCAL + PZERO',status)
       call ftpkyd(iunit,'PZERO2', vzero, -10,'',status)
-      
-
-      wscale = uscale
-      wzero = 0.0d0
-
       call ftpkys(iunit,'PTYPE3', 'WW','W coordinate, seconds',status)
       call ftpkyd(iunit,'PSCAL3',wscale, -10,'Real = FITS*PSCAL + PZERO',status)
       call ftpkyd(iunit,'PZERO3', wzero, -10,'',status)
-      
-
-      jdzero = int(obs_mjd_start+2400000.5d0)
-      jdscal1 = 1.d0/128.d0
-      jdscal2 = 1.d0/6.d6
-
       call ftpkys(iunit,'PTYPE4', 'DATE','Julian Date',status)
       call ftpkyd(iunit,'PSCAL4', jdscal1 , -10,'',status)
       call ftpkyd(iunit,'PZERO4', jdzero, -10,'',status)
-            
-      
       call ftpkys(iunit,'PTYPE5', 'DATE','Julian Date',status)
       call ftpkyd(iunit,'PSCAL5', jdscal2, -10,'',status)
       call ftpkyd(iunit,'PZERO5', 0.0d0, -10, '',status)
-      
-
-      
       call ftpkys(iunit,'PTYPE6', 'BASELINE','Ant1*256 + Ant2',status)
       call ftpkyd(iunit,'PSCAL6', 1.0d0, -10,'',status)
       call ftpkyd(iunit,'PZERO6', 0.0d0, -10,'',status)
-
 
 ! Write comments and history
       comment='Profile Simulation'
@@ -1625,77 +1549,50 @@ contains
       write(comment,'(A X A)') obs_name(1:l),chstr(1:ls)
       call ftpcom(iunit, comment, status)
       
-
       !!write(history(1), '(A)') 
-      history(1) = "HISTORY AIPS  SORT ORDER = ''TB''"  
-      history(2) = '                   / Where T is time (IAT), B is baseline num'
-      call ftphis(iunit,history(1), status)
-      call ftphis(iunit,history(2), status)
+      !history(1) = "HISTORY AIPS  SORT ORDER = ''TB''"  
+      !history(2) = '                   / Where T is time (IAT), B is baseline num'
+      !call ftphis(iunit,history(1), status)
+      !call ftphis(iunit,history(2), status)
       write(value,'(E16.9)'),1.0 
       history(1) = "HISTORY AIPS WTSCAL = " // value // "//Complex wts = WTSCAL*(FITS*BSCALE+BZERO)"
       call ftphis(iunit,history(1), status)
       !call ftpkys(iunit,'END', '','',status)
       
 
+! loop over groups
+      do i = 1, ngroup
+          group(:) = blank
+          ig=6
+          b = (i-1)*nchan+1
+          !if (igroup.lt.10) write(*,*) igroup, b
 
-! loop over number of samples in each track:
-      b = 0
-      do samp = 1,n_samp
-         utsec = (real(samp)*ha_step)-obs_ut_start
-         jd = obs_mjd_start + utsec*const_st2day + 2400000.5d0
-         date1=nint((jd-jdzero)/jdscal1)
-         date2=nint((jd-jdzero-date1*jdscal1)/jdscal2)
-
-
-!! Check whether AMI type telescope with + and - spacings
-!         if ((tel_name.eq.'LA').or.(tel_name.eq.'SA')) n_pol = 1
-
-
-! loop over baselines:
-! write visibilities for each baseline as a single group of data:
-        ! write(*,*) n_samp, n_pol, n_antennas, nchan
-         do p =1,n_pol
-            do ant1 = 1,n_antennas-1
-               do ant2 = ant1+1,n_antennas
-                  b = b+1
-                  base_id = ant1*256 + ant2
-                  !do ig = 1,ng
-                     group(:) = blank
-                  !end do
-                  i = ((samp-1)*n_basel)+basel
 ! uvw in seconds of time:
-                  group(1) = u(b)/(nu(1))/uscale
-                  group(2) = v(b)/(nu(1))/vscale
-                  group(3) = w(b)/(nu(1))/wscale
-                  group(4) = date1
-                  group(5) = date2
-                  group(6) = base_id
-                  ig=6
+          group(1) = u(b)/nu(1)/uscale
+          group(2) = v(b)/nu(1)/vscale
+          group(3) = w(b)/nu(1)/wscale
+          group(4) = (jd1(b)-jdzero)/jdscal1
+          group(5) = jd2(b)/jdscal2
+          group(6) = baseline(b)
 
 ! loop over frequency:
-                  do chan =1,nchan
-                     group(ig+1) = data_re(b)/bscale
-                     group(ig+2) = data_im(b)/bscale
-                     group(ig+3) = weight(b)/bscale
-                     b=b+1
-                     ig=ig+3
-                     !write(*,*) b,u(b),v(b),data_re(b),data_im(b),weight(b)
-                  end do
-                  b=b-1
-!    Convert to standard representation                 
-                  call ftpgpe(iunit, i, 1, ng, group, status)
-                  if (status.ne.0)then
-                     call FTGERR(status, comment)
-                     write(*,*) 'ftpgpe error',status, comment
-                     stop
-                  endif                  
-                  basel = basel + 1
-               end do
-            end do
-         end do
-         basel = 1 ! Reset baseline count
-      end do
+          do chan =1,nchan
+              group(ig+1) = data_re(b)/bscale
+              group(ig+2) = data_im(b)/bscale
+              group(ig+3) = weight(b)/bscale
+              b=b+1
+              ig=ig+3
+              !if (weight(b).gt.0) write(*,*) igroup,b,u(b),v(b),data_re(b),data_im(b),weight(b)
+          end do
 
+!    Convert to standard representation                 
+          call ftpgpe(iunit, i, 1, ng, group, status)
+          if (status.ne.0)then
+             call FTGERR(status, comment)
+             write(*,*) 'ftpgpe error',status, comment
+             stop
+          endif                  
+      end do
 
       call fits_wrant(iunit, n_antennas,x_pos,y_pos,z_pos,obsfreq,status)
 

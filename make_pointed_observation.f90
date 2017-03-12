@@ -12,6 +12,8 @@ subroutine make_pointed_observation(idum)
    character*1 :: chr_epoch
    real(kind=dp) :: psi, inc, rad, sindec
    integer :: i, j, k, ndays, l_dir
+   integer :: idate(3), base_id, date1
+   real(dp)   :: obs_ut_start, obs_mjd_start, date2, jd, utsec
    real(kind=dp) :: ha, ra, dec, ha_start, ha_stop, rms_s
    real(kind=dp), dimension(n_antennas,n_antennas) :: u_2d,v_2d,w_2d
    integer, dimension(n_antennas,n_antennas) :: shadow      
@@ -80,19 +82,32 @@ subroutine make_pointed_observation(idum)
 ! Calculate rms on one sample
       rms = rms_s/sqrt(ndays*ha_inc*3600.0/(15.0*deg2rad))
 
+! Put start date as current date
+      call util_enqdat(idate)
+      call sla_cldj(idate(3),idate(2),idate(1),obs_mjd_start,status) 
+      obs_ut_start = 0d0
+
 ! Calculate u, v and check for shadowing
       call calc_basel
       nvis = 1
       do k = 1, n_samp
          ha = (ha_start+(k-1)*ha_inc)
          call calc_uvw(ha,dec,u_2d,v_2d,w_2d,shadow)
+         utsec = (real(k)*ha_step)-obs_ut_start
+         jd = obs_mjd_start + utsec*const_st2day + 2400000.5d0
+         date1=nint(jd)
+         date2=jd-date1
          do i = 1, n_antennas-1
             do j = i+1, n_antennas
+               base_id = i*256 + j
                if (shadow(i,j).eq.1) then
                   do chan = 1, nchan
                      u(nvis) = u_2d(i,j)*nu(chan)/obsfreq
                      v(nvis) = v_2d(i,j)*nu(chan)/obsfreq
                      w(nvis) = w_2d(i,j)*nu(chan)/obsfreq
+                     jd1(nvis) = date1
+                     jd2(nvis) = date2
+                     baseline(nvis) = base_id
                      call extract_visibility(re(:,:,chan),im(:,:,chan),&
                                           maxsize,-u(nvis),v(nvis),&
                                           cellsize,data_re(nvis),data_im(nvis))
@@ -107,6 +122,8 @@ subroutine make_pointed_observation(idum)
 
       write(*,*) nvis,' out of ',nchan*n_samp*n_antennas*(n_antennas-1)/2,&
                       ' unshadowed'
+
+      gcount = nvis / nchan
 
    case default
       write(*,*) 'Not currently supported'
