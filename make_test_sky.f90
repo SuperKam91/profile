@@ -11,7 +11,7 @@ subroutine make_test_sky
    character*1 :: chr1
    real(kind=dp) :: alpha, sig_lev, d_ra, d_dec, x1, y1, gau_val
    real(kind=dp) :: sigma, rad, gau_fwhm, c_rad, ring_rad, ring_wid
-   real(kind=dp) :: dec, ra
+   real(kind=dp) :: dec, ra, norm
    real(kind=dp), dimension(maxsize) :: gau_tab
    integer :: dis_ra, dis_dec, centre, i, j, k
    logical :: do_jansky
@@ -185,12 +185,14 @@ subroutine make_test_sky
            & '0.0',d_ra,status)
       call io_getd('Displacement of ring in Dec (arcsec)',&
            & '0.0',d_dec,status)
-      call io_getd('Level for ring',&
+      call io_getd('Total flux density in ring',&
            & '1.0',sig_lev,status)
       if (flag_nd.eq.3) then
          call io_getd('Radio spectral index:','0.7',alpha,status)
       end if
 
+! Calculate flux per pixel
+      sig_lev = sig_lev/pi/(2*ring_rad*ring_wid+ring_wid**2)*cellsize**2
 ! put on sky
       do i = 1, maxsize
         do j = 1, maxsize
@@ -201,8 +203,10 @@ subroutine make_test_sky
           if ((rad.gt.ring_rad).and.(rad.lt.ring_rad+ring_wid)) then
             if (flag_nd.eq.3) then
               do chan = 1, nchan
+! Convert to brightness temp
+                norm = (cellsize*sec2rad)**2*2.0*k_b*nu(chan)**2/const_c2*1.0D26
                 p3_sky(i,j,chan) = p3_sky(i,j,chan)+sig_lev*&
-                                  (nu(chan)/obsfreq)**(-2.-alpha) 
+                                  (nu(chan)/obsfreq)**(-alpha)/norm
               end do
             else if (flag_nd.eq.2) then
               p_sky(i,j) = p_sky(i,j)+sig_lev
