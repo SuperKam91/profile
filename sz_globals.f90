@@ -63,7 +63,8 @@ module sz_globals
 
 ! variables for observed visibilities
    integer, parameter :: mvis = 5000000
-   real(kind=dp), dimension(mvis) :: u,v,w,weight,rms,data_re,data_im
+   real(kind=dp), dimension(mvis) :: u,v,w,jd1,jd2,baseline
+   real(kind=dp), dimension(mvis) :: weight,rms,data_re,data_im
    integer, dimension(mvis) :: which_pointing
 
 ! variable for mcg fitting

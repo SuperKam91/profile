@@ -88,7 +88,8 @@ subroutine fill_visibilities(idum,fill_single)
    end do
 
 ! Set number of visibilities etc
-   n_samp = nvis/(nchan*n_antennas*(n_antennas-1)/2)
+   !n_samp = nvis/(nchan*n_antennas*(n_antennas-1)/2)
+   !write(*,*) 'n_samp = ', n_samp
    n_pol = 1
 
 ! Write vis file?
