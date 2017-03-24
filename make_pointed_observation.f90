@@ -56,9 +56,8 @@ subroutine make_pointed_observation(idum)
       add_noise = io_yesno('Add Gaussian noise to the data','yes',status)
       if (add_noise) then
          write(*,*) 
-         write(*,*) 'RMS noise on RT per baseline per second - 0.132 Jy'
-         write(*,*) 'RMS noise on AMILA per baseline per second - 0.016 Jy'
-         write(*,*) 'RMS noise on AMISA per baseline per second - 0.191 Jy'
+         write(*,*) 'RMS noise on AMILA per baseline per second - 0.037 Jy'
+         write(*,*) 'RMS noise on AMISA per baseline per second - 0.379 Jy'
          write(*,*)
          call io_getd('RMS noise (Jy) per channel per baseline per second',&
                       '*',rms_s,status)
