@@ -1033,7 +1033,7 @@ contains
 
       implicit none
 
-      character*80, intent(in) :: filename
+      character(len=fname_len), intent(in) :: filename
       integer, intent(in) :: n_src
       logical, intent(in) :: sing_phase_cent
       logical :: ps_cent
@@ -1347,7 +1347,7 @@ contains
 
       implicit none
 
-      character*80, intent(in)   :: filename
+      character(len=fname_len), intent(in)   :: filename
       real(dp)   :: utsec,jd,sum_weight
       integer    :: base_id, date1, date2
       integer    :: basel, nbytes, ngroup, n_basel
