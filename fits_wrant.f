@@ -252,11 +252,11 @@ c    Write antenna records
       do ia = 1,n_antennas
          nosta = ia
          anname = ' '
-         stabxyz(1) = x_pos(ia)/1.E3
-         stabxyz(2) = y_pos(ia)/1.E3
-         stabxyz(3) = z_pos(ia)/1.E3
-         call util_i4cvt(nosta,1)
-         call util_r8cvt(stabxyz,3)
+         stabxyz(1) = x_pos(ia) !/1.E3
+         stabxyz(2) = y_pos(ia) !/1.E3
+         stabxyz(3) = z_pos(ia) !/1.E3
+         !call util_i4cvt(nosta,1)
+         !call util_r8cvt(stabxyz,3)
          call chr_chitoc(ia,station(7:),ls)
          if (ia.le.nant) anname = station
          call ftpcls (iunit,  1, ia, felem, 1, anname, status)

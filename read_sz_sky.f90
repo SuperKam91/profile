@@ -27,7 +27,8 @@
       write(*,*) 'FITS format map'
       write(*,*) '   (I)ntensity map in Jy/beam'
       write(*,*) '   Intensity map in Jy/(P)ixel'      
-      write(*,*) '   (T)hermodynmic tempature'
+      write(*,*) '   Intensity map in (M)Jy/sr'
+      write(*,*) '   (T)hermodynamic temperature'
       write(*,*) '   (B)rightness temperature'
       write(*,*) '   (Y) parameter'
       write(*,*) 
@@ -53,6 +54,10 @@
          norm = norm*norm
          norm = norm*2.0*k_b*obsfreq**2/const_c2*1.0D26
          scale = 1./norm
+         write(*,*) 'Appropriate Amplitude rescaling is ',scale
+      case('m','M')
+         norm = 2.0*k_b*obsfreq**2/const_c2*1.0D26
+         scale = 1d6/norm
          write(*,*) 'Appropriate Amplitude rescaling is ',scale
       case('t','T')
          call io_getd('Map observing frequency (GHz)','15.0',&
@@ -84,7 +89,7 @@
          extn = '.626_x'
          call get_read_filename(fits_file)
          call read_daisuke_map(fits_file)
-      case('i','I','p','P','t','T','b','B','y','Y')
+      case('i','I','p','P','m','M','t','T','b','B','y','Y')
          prompt = 'FITS filename'
          which_dir = profile_data_dir
          rootname = 'simclusterRaw'
