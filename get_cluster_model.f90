@@ -208,6 +208,7 @@ subroutine get_cluster_model
       write(*,*) 'How to calculate c200:'
       write(*,*) '(N)eto et al 2007 for relaxed clusters'
       write(*,*) '(D)utton and Maccio 2014 for NFW halos'
+      write(*,*) 'Dutton and Maccio 2014 for (E)inasto halos'
       write(*,*) 'Enter (m)anually'
       write(*,*)
       call io_getc('c200 type','n',c200_type,status)
@@ -218,6 +219,9 @@ subroutine get_cluster_model
           a=0.520d0+(0.905d0-0.520d0)*exp(-0.617d0*z**1.21)
           b=-0.101d0+0.026d0*z
           c200=10d0**(a+b*LOG10(MT200*h/1d12))
+	case('e', 'E')
+	  c200=10.d0 ** (0.459d0 + 0.518d0 * exp(-0.49d0 * z**(1.303d0)) &
+                        + (-0.13d0 + 0.029d0 * z) * log10(MT200 * h / 1.d12))
         case('m', 'M') c200_sel
           call io_getd('c200:', '*', c200, status)
       end select c200_sel
@@ -232,6 +236,14 @@ subroutine get_cluster_model
          call io_getd('Angle on the sky (degrees, anticlockwise from x-axis):', '*', el_alpha, status)
          el_alpha=el_alpha*deg2rad
       end if
+      write(*,*) 'Which dark matter profile?'
+      write(*,*) '(N)FW model of DM halos (1996)'
+      write(*,*) '(E)inasto model (1965)'
+      call io_getc('DM profile','n',DM_type,status)
+      DM_sel: select case(DM_type)
+	case('e', 'E') DM_sel
+	    call io_getd('Einasto DM shape parameter a_Ein', '*', aEin_DM, status)
+        end select DM_sel
    case('g', 'G')
       call io_getd('GNFW alpha parameter:', '*', a_GNFW, status)
       call io_getd('GNFW beta parameter:', '*', b_GNFW, status)

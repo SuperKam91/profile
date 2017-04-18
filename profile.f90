@@ -166,6 +166,8 @@ program profile
    c_GNFW = 0.3081d0
    c500_GNFW = 1.177d0
    f_GNFW = 1.0d0
+! Einasto DM shape parameter
+   aEin_DM = 0.20d0
 !   temp_halo = .false.
    ellipsoid = .true.
    vary_beta = .true.

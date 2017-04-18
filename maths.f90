@@ -2,7 +2,7 @@ module maths
 
    use kind_def
 
-   implicit none
+   !implicit none
 
    interface do_fft
       module procedure do_2d_fft
@@ -927,7 +927,7 @@ end function locate_dp
 
 !  Rombint returns the integral from a to b of using Romberg integration.
 !  The method converges provided that f(x) is continuous in (a,b).
-!  f must be double precision and must be declared external in the calling
+!  f must be real*8 and must be declared external in the calling
 !  routine.  tol indicates the desired relative accuracy in the integral.
 !
         use kind_def
@@ -1147,6 +1147,394 @@ end function locate_dp
       END function zbrent
 	
 !=======================================================================
+
+!adapted for GM=6 kj 01/02/17
+function alngam ( xvalue, ifault )
+
+!*****************************************************************************80
+!
+!! ALNGAM computes the logarithm of the gamma function.
+!
+!  Modified:
+!
+!    13 January 2008
+!
+!  Author:
+!
+!    Original FORTRAN77 version by Allan Macleod.
+!    FORTRAN90 version by John Burkardt.
+!
+!  Reference:
+!
+!    Allan Macleod,
+!    Algorithm AS 245,
+!    A Robust and Reliable Algorithm for the Logarithm of the Gamma Function,
+!    Applied Statistics,
+!    Volume 38, Number 2, 1989, pages 397-402.
+!
+!  Parameters:
+!
+!    Input, real*8 XVALUE, the argument of the Gamma function.
+!
+!    Output, integer ( kind = 4 ) IFAULT, error flag.
+!    0, no error occurred.
+!    1, XVALUE is less than or equal to 0.
+!    2, XVALUE is too big.
+!
+!    Output, real*8 ALNGAM, the logarithm of the gamma function of X.
+!
+  implicit none
+
+  real*8 alngam
+  real*8, parameter :: alr2pi = 0.918938533204673D+00
+  integer ifault
+  real*8, dimension ( 9 ) :: r1 = (/ &
+    -2.66685511495D+00, &
+    -24.4387534237D+00, &
+    -21.9698958928D+00, &
+     11.1667541262D+00, &
+     3.13060547623D+00, &
+     0.607771387771D+00, &
+     11.9400905721D+00, &
+     31.4690115749D+00, &
+     15.2346874070D+00 /)
+  real*8, dimension ( 9 ) :: r2 = (/ &
+    -78.3359299449D+00, &
+    -142.046296688D+00, &
+     137.519416416D+00, &
+     78.6994924154D+00, &
+     4.16438922228D+00, &
+     47.0668766060D+00, &
+     313.399215894D+00, &
+     263.505074721D+00, &
+     43.3400022514D+00 /)
+  real*8, dimension ( 9 ) :: r3 = (/ &
+    -2.12159572323D+05, &
+     2.30661510616D+05, &
+     2.74647644705D+04, &
+    -4.02621119975D+04, &
+    -2.29660729780D+03, &
+    -1.16328495004D+05, &
+    -1.46025937511D+05, &
+    -2.42357409629D+04, &
+    -5.70691009324D+02 /)
+  real*8, dimension ( 5 ) :: r4 = (/ &
+     0.279195317918525D+00, &
+     0.4917317610505968D+00, &
+     0.0692910599291889D+00, &
+     3.350343815022304D+00, &
+     6.012459259764103D+00 /)
+  real*8 x
+  real*8 x1
+  real*8 x2
+  real*8, parameter :: xlge = 5.10D+05
+  real*8, parameter :: xlgst = 1.0D+30
+  real*8 xvalue
+  real*8 y
+
+  x = xvalue
+  alngam = 0.0D+00
+!
+!  Check the input.
+!
+  if ( xlgst <= x ) then
+    ifault = 2
+    return
+  end if
+
+  if ( x <= 0.0D+00 ) then
+    ifault = 1
+    return
+  end if
+
+  ifault = 0
+!
+!  Calculation for 0 < X < 0.5 and 0.5 <= X < 1.5 combined.
+!
+  if ( x < 1.5D+00 ) then
+
+    if ( x < 0.5D+00 ) then
+
+      alngam = - log ( x )
+      y = x + 1.0D+00
+!
+!  Test whether X < machine epsilon.
+!
+      if ( y == 1.0D+00 ) then
+        return
+      end if
+
+    else
+
+      alngam = 0.0D+00
+      y = x
+      x = ( x - 0.5D+00 ) - 0.5D+00
+
+    end if
+
+    alngam = alngam + x * (((( &
+        r1(5)   * y &
+      + r1(4) ) * y &
+      + r1(3) ) * y &
+      + r1(2) ) * y &
+      + r1(1) ) / (((( &
+                  y &
+      + r1(9) ) * y &
+      + r1(8) ) * y &
+      + r1(7) ) * y &
+      + r1(6) )
+
+    return
+
+  end if
+!
+!  Calculation for 1.5 <= X < 4.0.
+!
+  if ( x < 4.0D+00 ) then
+
+    y = ( x - 1.0D+00 ) - 1.0D+00
+
+    alngam = y * (((( &
+        r2(5)   * x &
+      + r2(4) ) * x &
+      + r2(3) ) * x &
+      + r2(2) ) * x &
+      + r2(1) ) / (((( &
+                  x &
+      + r2(9) ) * x &
+      + r2(8) ) * x &
+      + r2(7) ) * x &
+      + r2(6) )
+!
+!  Calculation for 4.0 <= X < 12.0.
+!
+  else if ( x < 12.0D+00 ) then
+
+    alngam = (((( &
+        r3(5)   * x &
+      + r3(4) ) * x &
+      + r3(3) ) * x &
+      + r3(2) ) * x &
+      + r3(1) ) / (((( &
+                  x &
+      + r3(9) ) * x &
+      + r3(8) ) * x &
+      + r3(7) ) * x &
+      + r3(6) )
+!
+!  Calculation for 12.0 <= X.
+!
+  else
+
+    y = log ( x )
+    alngam = x * ( y - 1.0D+00 ) - 0.5D+00 * y + alr2pi
+
+    if ( x <= xlge ) then
+
+      x1 = 1.0D+00 / x
+      x2 = x1 * x1
+
+      alngam = alngam + x1 * ( ( &
+             r4(3)   * &
+        x2 + r4(2) ) * &
+        x2 + r4(1) ) / ( ( &
+        x2 + r4(5) ) * &
+        x2 + r4(4) )
+
+    end if
+
+  end if
+
+  return
+end function alngam
+
+!=======================================================================
+
+function gammds ( x, p, ifault )
+
+!*****************************************************************************80
+!
+!! GAMMDS computes the incomplete Gamma integral.
+!
+!  Discussion:
+!
+!    The parameters must be positive.  An infinite series is used.
+!
+!  Auxiliary function:
+!
+!    ALNGAM = CACM algorithm 291
+!
+!  Modified:
+!
+!    22 January 2008
+!
+!  Author:
+!
+!    Chi Leung Lau
+!    Modifications by John Burkardt
+!
+!  Reference:
+!
+!    Chi Leung Lau,
+!    Algorithm AS 147:
+!    A Simple Series for the Incomplete Gamma Integral,
+!    Applied Statistics,
+!    Volume 29, Number 1, 1980, pages 113-114.
+!
+!  Parameters:
+!
+!    Input, real*8 X, P, the arguments of the incomplete
+!    Gamma integral.  X and P must be greater than 0.
+!
+!    Output, integer ( kind = 4 ) IFAULT, error flag.
+!    0, no errors.
+!    1, X <= 0 or P <= 0.
+!    2, underflow during the computation.
+!
+!    Output, real*8 GAMMDS, the value of the incomplete
+!    Gamma integral.
+!
+  implicit none
+
+  real*8 a
+  !real*8 alngam
+  !interface
+  !      function alngam(xvalue, ifault)
+  !	real*8 :: xvalue
+  !	integer :: ifault
+  !	end function alngam
+  !  end interface
+  real*8 arg
+  real*8 c
+  real*8, parameter :: e = 1.0D-09
+  real*8 f
+  real*8 gammds
+  integer ifault
+  integer ifault2
+  real*8 p
+  real*8, parameter :: uflo = 1.0D-37
+  real*8 x
+!
+!  Check the input.
+!
+  if ( x <= 0.0D+00 ) then
+    ifault = 1
+    gammds = 0.0D+00
+    return
+  end if
+
+  if ( p <= 0.0D+00 ) then
+    ifault = 1
+    gammds = 0.0D+00
+    return
+  end if
+!
+!  ALNGAM is the natural logarithm of the gamma function.
+!
+  ifault2 = 0
+  arg = p * log ( x ) - alngam ( p + 1.0D+00, ifault2 ) - x
+
+  if ( arg < log ( uflo ) ) then
+    gammds = 0.0D+00
+    ifault = 2
+    return
+  end if
+
+  f = exp ( arg )
+
+  if ( f == 0.0D+00 ) then
+    gammds = 0.0D+00
+    ifault = 2
+    return
+  end if
+
+  ifault = 0
+!
+!  Series begins.
+!
+  c = 1.0D+00
+  gammds = 1.0D+00
+  a = p
+
+  do
+
+    a = a + 1.0D+00
+    c = c * x / a
+    gammds = gammds + c
+
+    if ( c <= e * gammds ) then
+      exit
+    end if
+
+  end do
+
+  gammds = gammds * f
+
+  return
+end function gammds
+
+!=======================================================================
+
+! newton.f90 --
+!
+!     Example belonging to "Modern Fortran in Practice" by Arjen Markus
+!
+!     This work is licensed under the Creative Commons Attribution 3.0 Unported License.
+!     To view a copy of this license, visit http://creativecommons.org/licenses/by/3.0/
+!     or send a letter to:
+!     Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+!
+!     Straightforward implementation of the Newton-Raphson method
+!     for finding roots of an equation
+!
+subroutine find_root( f, xinit, tol, maxiter, result, flag )
+
+    interface
+        function f(x)
+	real*8 :: f
+	real*8 :: x
+	end function f
+    end interface
+
+    real*8, intent(in)     :: xinit
+    real*8, intent(in)     :: tol
+    integer, intent(in)  :: maxiter
+    real*8, intent(out)    :: result
+    integer, intent(out) :: flag
+
+    real*8                 :: eps = 1.0e-4
+    real*8                 :: fx1
+    real*8                 :: fx2
+    real*8                 :: fprime
+    real*8                 :: x
+    real*8                 :: xnew
+    integer              :: i
+
+    result  = 0.0
+    flag = 1
+    x = xinit
+    do i = 1,max(1,maxiter)
+        fx1    = f(x)
+        fx2    = f(x+eps)
+        !write(*,*) i, fx1, fx2, eps
+        fprime = (fx2 - fx1) / eps
+
+        xnew   = x - fx1 / fprime
+
+        if ( abs(xnew-x) <= tol ) then
+            flag = 0
+            result  = xnew
+	    !write(*,*) "X from Newton Raphson is ",result
+	    !write(*,*) "number of iterations taken: ", i
+            exit
+        endif
+
+        x = xnew
+        !write(*,*) i, x
+     enddo
+
+end subroutine find_root
+
 
 end module maths
 

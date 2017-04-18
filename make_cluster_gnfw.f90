@@ -42,9 +42,9 @@ subroutine make_cluster_gnfw
    real(kind=dp) :: Y_int, Y500_int, y0_int, Y500, y_coeff, theta500
    real(kind=dp) :: angfactor, rlimit1, pixsize, y0
    real(kind=dp) :: xx, yy, dx, dy, rr, logthetalim1
-   real(kind=dp) :: a, b, c, c500, h
-   real(kind=dp) :: rhocritz, Mg200, rhos_DM
-   real(kind=dp) :: r500, Pei_GNFW, DM_GNFWgasVol, rhocrit, Y5R500, Y5R500_int
+   real(kind=dp) :: a, b, c, c500
+   real(kind=dp) :: Mg200, rhos_DM, h, rhocrit, rhocritz
+   real(kind=dp) :: r500, Pei_GNFW, DM_GNFWgasVol, Y5R500, Y5R500_int
    real(kind=dp) :: p, f200, f500, x
    real(kind=dp), parameter :: a1=0.5116d0, a2=-0.4283d0, a3=-3.13d-3, a4=-3.52d-5
    real(kind=dp), parameter :: eps = 1.d-4
@@ -56,6 +56,10 @@ subroutine make_cluster_gnfw
    character*80 :: outfile
    external :: GNFW_YsphVolIntegrand, yintegral
    external :: DM_GNFWsphVolInt, r500_fun
+   real(kind=dp) :: R0, R !for Newton raphson r_200 -> r_500 mapping for Einasto DM kj 12/02/17
+   real(kind=dp) :: Ein_GNFWgasVol !adapted for GM=6 kj 01/02/17
+   real(kind=dp), external :: Ein_GNFWsphVolInt, R_func
+   integer		   :: flag
      
    a=a_GNFW
    b=b_GNFW
@@ -73,41 +77,88 @@ subroutine make_cluster_gnfw
      Mg200=MT200*fg200     !M_sun
      r200=((3.d0*MT200)/(4.d0*pi*200.d0*rhocritz))**(1.d0/3.d0)   !Mpc
      write(*,*) 'r200 = ', r200, ' MPc'
-     rs_DM=r200/c200                   !Mpc
-     rhos_DM=(200.d0/3.d0)*((r200/rs_DM)**3.d0)*&
-		   ( rhocritz/(DLOG(1.d0 + c200) - ( 1.d0/(1.d0 + 1.d0/c200) )))   !M_sunMpc-3
-     !r500=r200/1.5d0                 !Mpc. The coeff 1.5 was derived from testing the model over a wide
-	                                            ! range of cluster masses see paper for the derivation
-     !write(*,*) 'r500 = r200/1.5 = ', r500
-     !r500 = zbrent(r500_fun, eps, r200, eps) ! solve the implicit function for r500 given r200, c200
-     !write(*,*) 'Numerical solution for r500 is', r500
-     ! Use Hu & Kravtsov 2003 fitting formula
-     f200=(1.d0/c200)**3*(DLOG(1.d0+c200)-1.d0/(1+1.d0/c200))
-     f500=500d0/200d0*f200
-     p=a2+a3*DLOG(f500)+a4*(DLOG(f500))**2
-     x=(a1*f500**(2.d0*p)+(3.d0/4.d0)**2)**(-1.d0/2.d0)+2.d0*f500
-     r500=rs_DM/x
-     write(*,*) 'Using analytical solution for r500:', r500
-     rp_GNFW=r500/c500_GNFW    !Mpc
-     call qtrap(DM_GNFWsphVolInt, 1.0d-4, r200, eps, DM_GNFWgasVol)
-     write(*,*) DM_GNFWgasVol
-     Pei_GNFW=((mu_n/mu_e)*(G*rhos_DM*rs_DM*rs_DM*rs_DM)*Mg200)/DM_GNFWgasVol
-     Pei_GNFW= Pei_GNFW*(m_0*m2Mpc) *(J2keV)       !keVm-3
-     theta_s=(rp_GNFW/D_theta)/min2rad
-     Ytot=(4.d0*pi*sigma_T*Pei_GNFW*rp_GNFW)/(mec2*m2Mpc)*theta_s*theta_s/a_GNFW*&
-	           Gammafun((3.d0-c_GNFW)/a_GNFW) *&
-		   Gammafun((b_GNFW-3.d0)/a_GNFW)/Gammafun((b_GNFW-c_GNFW)/a_GNFW)
-     if (verbose) then
-       write(*,*)
-       write(*,*) 'Critical density is', rhocritz, 'M_sol/Mpc^3 at redshift', z
-       write(*,*) 'Dark matter concentration parameter c200 is', c200
-       write(*,*) 'r200 is', r200, 'Mpc'
-       write(*,*) 'Normalisation constant for NFW DM halo, rhos_DM is', rhos_DM, 'M_sol/Mpc^3'
-       write(*,*) 'Normalisation constant for gas profile, Pei is', Pei_GNFW, 'keV/m^3'
-       write(*,*) 'r500 is', r500, 'Mpc'
-       write(*,*) 'theta_s is', theta_s, 'arcmin'
-       write(*,*) 'Ytot is', Ytot, 'arcmin^2'
-     end if
+     DM_sel: select case(DM_type)
+     	case('n', 'N')
+	     write(*,*) 'Using NFW DM profile'
+	     rs_DM=r200/c200                   !Mpc
+	     rhos_DM=(200.d0/3.d0)*((r200/rs_DM)**3.d0)*&
+			   ( rhocritz/(DLOG(1.d0 + c200) - ( 1.d0/(1.d0 + 1.d0/c200) )))   !M_sunMpc-3
+	     !r500=r200/1.5d0                 !Mpc. The coeff 1.5 was derived from testing the model over a wide
+			                                    ! range of cluster masses see paper for the derivation
+	     !write(*,*) 'r500 = r200/1.5 = ', r500
+	     !r500 = zbrent(r500_fun, eps, r200, eps) ! solve the implicit function for r500 given r200, c200
+	     !write(*,*) 'Numerical solution for r500 is', r500
+	     ! Use Hu & Kravtsov 2003 fitting formula
+	     f200=(1.d0/c200)**3*(DLOG(1.d0+c200)-1.d0/(1+1.d0/c200))
+	     f500=500d0/200d0*f200
+	     p=a2+a3*DLOG(f500)+a4*(DLOG(f500))**2
+	     x=(a1*f500**(2.d0*p)+(3.d0/4.d0)**2)**(-1.d0/2.d0)+2.d0*f500
+	     r500=rs_DM/x
+	     write(*,*) 'Using analytical solution for r500:', r500
+	     rp_GNFW=r500/c500_GNFW    !Mpc
+	     call qtrap(DM_GNFWsphVolInt, 1.0d-4, r200, eps, DM_GNFWgasVol)
+	     write(*,*) 'NFW gas integral = ', DM_GNFWgasVol
+	     Pei_GNFW=((mu_n/mu_e)*(G*rhos_DM*rs_DM*rs_DM*rs_DM)*Mg200)/DM_GNFWgasVol
+	     Pei_GNFW= Pei_GNFW*(m_0*m2Mpc) *(J2keV)       !keVm-3
+	     theta_s=(rp_GNFW/D_theta)/min2rad
+	     Ytot=(4.d0*pi*sigma_T*Pei_GNFW*rp_GNFW)/(mec2*m2Mpc)*theta_s*theta_s/a_GNFW*&
+			   Gammafun((3.d0-c_GNFW)/a_GNFW) *&
+			   Gammafun((b_GNFW-3.d0)/a_GNFW)/Gammafun((b_GNFW-c_GNFW)/a_GNFW)
+	     if (verbose) then
+	       write(*,*)
+	       write(*,*) 'Critical density is', rhocritz, 'M_sol/Mpc^3 at redshift', z
+	       write(*,*) 'Dark matter concentration parameter c200 is', c200
+	       write(*,*) 'r200 is', r200, 'Mpc'
+	       write(*,*) 'Normalisation constant for NFW DM halo, rhos_DM is', rhos_DM, 'M_sol/Mpc^3'
+	       write(*,*) 'Normalisation constant for gas profile, Pei is', Pei_GNFW, 'keV/m^3'
+	       write(*,*) 'r500 is', r500, 'Mpc'
+	       write(*,*) 'theta_s is', theta_s, 'arcmin'
+	       write(*,*) 'Ytot is', Ytot, 'arcmin^2'
+	     end if
+     	case('e', 'E')
+	     write(*,*) 'Using Einasto DM profile'
+	     rm2_DM = r200/c200 !MPc, analgous to r200_DM from GM 5
+	     rhom2_DM = (200.d0 / 3.d0) * (r200 / rm2_DM) ** (3.d0) * & 
+			   rhocritz / (1.d0 / aEin_DM * (aEin_DM / 2.d0)**(3.d0/aEin_DM) * &
+		           exp(2.d0 / aEin_DM) & 
+			   * gammaFun(3.d0 / aEin_DM) * gammds(2.d0 / aEin_DM * (r200 / rm2_DM)**aEin_DM, 3.d0 / aEin_DM, flag))
+
+	     if(flag == 1 .or. flag == 2) then
+			write(*,*) "Gamma calculation for rhom2_DM has screwed up"
+			flag = 1
+			return
+	     endif
+	     R0 = r200 / (1.5d0 * rm2_DM) !Initial guess for r500 for Newton Raphson
+	     call find_root( R_func, R0, 1.0d-4, 50, R, flag )
+	     if(flag == 1) then
+			write(*,*) "Newton Raphson to determine r500 failed to converge."
+			return
+	     endif
+	     r500 = R * rm2_DM
+	     rp_GNFW = r500 / c500_GNFW
+	     call qtrap(Ein_GNFWsphVolInt, 1.0d-4, r200, eps, Ein_GNFWgasVol)
+	     write(*,*) 'Einasto gas integral = ', Ein_GNFWgasVol
+	     Pei_GNFW = ((mu_n/mu_e)*(G*rhom2_DM*rm2_DM*rm2_DM*rm2_DM)*Mg200)* &
+			   1.d0 / aEin_DM * (aEin_DM / 2.d0) ** (3.d0 / aEin_DM) * exp(2.d0 / aEin_DM) / &
+			   Ein_GNFWgasVol
+	     Pei_GNFW= Pei_GNFW*(m_0*m2Mpc) *(J2keV)       !keVm-3
+	     theta_s=(rp_GNFW/D_theta)/min2rad
+	     Ytot=(4.d0*pi*sigma_T*Pei_GNFW*rp_GNFW)/(mec2*m2Mpc)*theta_s*theta_s/a_GNFW*&
+			   Gammafun((3.d0-c_GNFW)/a_GNFW) *&
+			   Gammafun((b_GNFW-3.d0)/a_GNFW)/Gammafun((b_GNFW-c_GNFW)/a_GNFW)
+	     if (verbose) then
+	       write(*,*)
+	       write(*,*) 'Critical density is', rhocritz, 'M_sol/Mpc^3 at redshift', z
+	       write(*,*) 'Dark matter concentration parameter c200 is', c200
+	       write(*,*) 'r200 is', r200, 'Mpc'
+	       write(*,*) 'Normalisation constant for Einasto DM halo, rhom2_DM is', rhom2_DM, 'M_sol/Mpc^3'
+	       write(*,*) 'Normalisation constant for gas profile, Pei is', Pei_GNFW, 'keV/m^3'
+	       write(*,*) 'r500 is', r500, 'Mpc'
+	       write(*,*) 'theta_s is', theta_s, 'arcmin'
+	       write(*,*) 'Ytot is', Ytot, 'arcmin^2'
+	     end if
+	end select DM_sel
+	
    end select
    theta500 = theta_s*c500
    halfsize = maxsize/2
@@ -351,7 +402,74 @@ function DM_GNFWsphVolInt(r)
   endif
 
 end function DM_GNFWsphVolInt
-  
+ 
+!=========================================================================
+
+function Ein_GNFWsphVolInt(r)
+  use sz_globals
+  use maths
+
+  !implicit none
+  real(kind=dp)		:: r, Ein_GNFWsphVolInt
+  integer		:: flag
+  if(r<rmin)then
+	Ein_GNFWsphVolInt=rmin**3 * (b_GNFW * (rmin / rp_GNFW) ** a_GNFW + c_GNFW) / &
+			 (gammaFun(3.d0 / aEin_DM) * &
+			 gammds(2.d0 / aEin_DM * (rmin / rm2_DM) ** aEin_DM, 3.d0 / aEin_DM, flag) * &
+			  (rmin / rp_GNFW) ** (c_GNFW) * (1.d0 + (rmin / rp_GNFW)**a_GNFW)** &
+			  ((a_GNFW + b_GNFW - c_GNFW) / a_GNFW))
+	
+	elseif(r>rmax) then
+	
+	Ein_GNFWsphVolInt=0.d0  
+	   
+        else	
+	
+	Ein_GNFWsphVolInt=r**3 * (b_GNFW * (r / rp_GNFW) ** a_GNFW + c_GNFW) / &
+			 (gammaFun(3.d0 / aEin_DM) * &
+			 gammds(2.d0 / aEin_DM * (r / rm2_DM) ** aEin_DM, 3.d0 / aEin_DM, flag) * &
+			  (r / rp_GNFW) ** (c_GNFW) * (1.d0 + (r / rp_GNFW)**a_GNFW)** & 
+			  ((a_GNFW + b_GNFW - c_GNFW) / a_GNFW))
+	
+	endif
+	
+	if(flag == 1 .or. flag == 2) then
+		write(*,*) "Gamma calculation for Ein_GNFWsphVolInt has screwed up"
+		flag = 1
+		return
+	endif
+
+end function Ein_GNFWsphVolInt
+
+!=========================================================================
+!Function used to determine r500 using Newton Raphson to invert function. R = r500 / rm2
+
+function R_func(R)
+	use sz_globals
+	use maths
+	use cosmology
+
+	real(kind=dp) :: R_func
+	real(kind=dp) :: R
+	integer		 :: flag
+	real(kind=dp) :: h, rhocrit, rhocritz
+	real(kind=dp), parameter :: G=4.518d-48 !Gravitational constant in Mpc^3 M_sun^-1 s^-2
+	h=H0/100
+   	rhocrit=3.*(h*100.*m2Mpc*1000.)**2./(8.*pi*G) ! M_sol/MPc^3
+	rhocritz = rhocrit/one_over_h(z)**2
+
+	R_func = R**3.d0 / (gammaFun(3.d0 / aEin_DM) * &
+		 gammds(2.d0 / aEin_DM * (R) ** (aEin_DM), 3.d0 / aEin_DM, flag)) &
+		 - (3d0*rhom2_DM / 500d0 * (aEin_DM/2d0)**(3d0/aEin_DM) &
+		 * exp(2d0/aEin_DM) / (rhocritz*aEin_DM))
+	if(flag == 1 .or. flag == 2) then
+		flag = 1
+		write(*,*) "Gamma calculation for r500 Newton Raphson has screwed up"
+		return
+	endif
+
+	end function R_func
+ 
 !=========================================================================
 
 function r500_fun(r500)
