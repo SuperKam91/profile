@@ -63,7 +63,8 @@ module sz_globals
 
 ! variables for observed visibilities
    integer, parameter :: mvis = 5000000
-   real(kind=dp), dimension(mvis) :: u,v,w,weight,rms,data_re,data_im
+   real(kind=dp), dimension(mvis) :: u,v,w,jd1,jd2,baseline
+   real(kind=dp), dimension(mvis) :: weight,rms,data_re,data_im
    integer, dimension(mvis) :: which_pointing
 
 ! variable for mcg fitting
@@ -117,6 +118,7 @@ module sz_globals
    
 ! globals for the cluster model
    character*1, save :: model_type
+   character*1, save :: DM_type !adapted for Einasto DM profile kj 26/02/17
 
 ! general cluster parameters
    real(kind=dp), save :: beta, theta_cx, z, n0, cellsize, Te, const
@@ -124,6 +126,7 @@ module sz_globals
    real(kind=dp), save :: T_central, T_halo, Tcorerad, x_exp, sz_x, sz_y, sz_z
    real(kind=dp), dimension(3), save :: theta_c, ang
    real(kind=dp), save :: a_GNFW, b_GNFW, c_GNFW, c500_GNFW, Ytot, theta_s, f_GNFW
+   real(kind=dp), save :: aEin_DM, rm2_DM, rhom2_DM !adapted for Einasto DM profile, needed globally kj 26/02/17
    real(kind=dp), save :: thetai
    real(kind=dp), parameter :: thetalimit = 20.0
    real(kind=dp), parameter :: thetamin = 0.2
