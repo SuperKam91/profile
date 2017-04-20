@@ -80,8 +80,9 @@ subroutine fill_visibilities(idum,fill_single)
          else
             visrms = scale
          end if
-         data_re(ivis) = data_re(ivis)+(visrms/sqrt(2.d0)*gasdev(idum))
-         data_im(ivis) = data_im(ivis)+(visrms/sqrt(2.d0)*gasdev(idum))
+         data_re(ivis) = data_re(ivis)+(visrms*gasdev(idum))
+         data_im(ivis) = data_im(ivis)+(visrms*gasdev(idum))
+         weight(ivis) = 1d0/visrms**2
       end if
 
       if (.not.fill_single) chan = chan+1 
