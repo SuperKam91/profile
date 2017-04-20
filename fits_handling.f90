@@ -84,7 +84,6 @@ contains
       call ftgkye(iunit,'CDELT2',delta_dec,ftcom,status)
       status = 0
       !!call ftgkys(iunit,'TELESCOP',tel_tmp,ftcom,status)
-      
 
       if (verbose) then
          write(*,*) 'Map at ',obsra,obsdec
@@ -158,7 +157,7 @@ contains
 ! Put map into all channels if required
       if (flag_nd.eq.3) then
         do i = 1, nchan
-          p3_sky(:,:,i) = temp_sky
+          p3_sky(:,:,i) = temp_sky*(nu(i)/obsfreq)**(-2)
         end do
       else
         p_sky = temp_sky
