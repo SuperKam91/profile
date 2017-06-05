@@ -457,9 +457,9 @@ contains
 
       implicit none
 
-      integer :: iunit, i, old_n_antennas, old_nchan
+      integer :: iunit, i, old_n_antennas, old_nchan, io_stat
       real(kind=dp) :: dummy1
-      character(len=fname_len) :: filename, file_type
+      character(len=fname_len) :: filename, file_type, temp_line
       logical :: ex
 
 ! Ask for file name
@@ -504,6 +504,15 @@ contains
          do i = 1, nchan
             read(iunit,*) nu(i)
          end do
+
+         ! Check for a telescope name - not present in older files
+         do while (io_stat==0)
+            read(iunit,'(A)',iostat=io_stat) temp_line
+            if (temp_line(1:8).eq.'tel_name') then
+              tel_name=trim(temp_line(9:fname_len))
+              !write(*,*) 'Found telescope name', trim(tel_name)
+            endif
+         enddo
       end if
      
 ! Rewind and close file

@@ -407,10 +407,10 @@ program profile
 ! 'Help'
       else if (command.eq.8) then
          do i = 1,ncomm+nsep
-            if (index(i).eq.0) then
+            if (index1(i).eq.0) then
                write(*,*)'--------------------'
-            else if (index(i).ne.99) then           
-               call io_wrout(comms(index(i)))
+            else if (index1(i).ne.99) then           
+               call io_wrout(comms(index1(i)))
             end if
          end do
 

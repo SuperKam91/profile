@@ -1062,9 +1062,6 @@ contains
       integer   chr_lenb
       external  chr_lenb
 
-      logical   chr_match
-      external  chr_match
-
       character*16 :: kword
       character*16 :: value
       character*72 :: comment
@@ -1455,9 +1452,9 @@ contains
       if (obs_epoch.eq.1) epoch=1950.0d0
       if (obs_epoch.eq.2) epoch=2000.0d0
 
-      if (chr_match(tel_name,'LA')) then
+      if (index(tel_name,'LA').gt.0) then
          write (value, '(A)') 'AMI-LA'
-      elseif (chr_match(tel_name,'SA')) then
+      elseif (index(tel_name,'SA').gt.0) then
          value='AMI-SA'
       else
          value='AMI-SA'

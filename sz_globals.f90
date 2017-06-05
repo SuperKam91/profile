@@ -336,9 +336,9 @@ module sz_globals
 
    integer :: jparm
    integer, parameter :: nsep=6, n_unused=16, n_index = ncomm+nsep-n_unused
-   integer index(ncomm+nsep)
+   integer index1(ncomm+nsep)
 
-   data (index(jparm), jparm=1, n_index)    /&
+   data (index1(jparm), jparm=1, n_index)    /&
        & 16,17,34,26,36,43,44,8,1,58    ,0,  & ! General control commands
        & 2,3,5,6,13,15,18,19,24,31,38,45  ,  & ! map commands
        & 49,68,84,11                    ,0,  & ! map commands
@@ -350,7 +350,7 @@ module sz_globals
        & 67,69,70,72,74,76,81,82,87,88       & ! misc commands
        & /
 
-   data (index(jparm), jparm=n_index+1, n_index+n_unused)   / &
+   data (index1(jparm), jparm=n_index+1, n_index+n_unused)   / &
        & 99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99    /
 
    interface do_allocation
