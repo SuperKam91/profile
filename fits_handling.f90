@@ -551,7 +551,9 @@ contains
             data_re(b) = ivalue(j)
             data_im(b) = ivalue(j+1)
             weight(b) = ivalue(j+2)
-            rms(b) = 1./sqrt(weight(b))
+            if (weight(b).lt.0) weight(b)=0d0
+            rms(b)=0d0
+            if (weight(b).gt.0) rms(b) = 1./sqrt(weight(b))
             if (debug) then
                write(*,*) b,ifreq,u(b),v(b),jd1(b)+jd2(b),baseline(b),data_re(b),data_im(b),weight(b)
             end if
@@ -1142,9 +1144,9 @@ contains
       if (obs_epoch.eq.1) epoch=1950.0d0
       if (obs_epoch.eq.2) epoch=2000.0d0
       !Get telescope name
-      if (chr_match(tel_name,'LA')) then
+      if (index(tel_name,'LA').gt.0) then
          write (value, '(A)') 'AMI-LA'
-      elseif (chr_match(tel_name,'LA')) then
+      elseif (index(tel_name,'SA').gt.0) then
          value='AMI-SA'
       else
          value='AMI-SA'
@@ -1363,10 +1365,6 @@ contains
          
       integer   chr_lenb
       external  chr_lenb
-
-      logical   chr_match
-      external  chr_match
-
 
 !c Header items
 
