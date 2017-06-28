@@ -757,8 +757,9 @@ contains
 
 ! Parse RECORD for list of KEYS separated by spaces, return number NKEYS
 	call get_keys(record,nkeymax,keys,nkeys)
-	read(keys(4),*,err=9) match
- 9      continue
+        if (nkeys.ge.4) then
+          read(keys(4),*) match
+        endif
 	if (match.eq.'BMAJ=') then 
            beam_found = .true.
         end if

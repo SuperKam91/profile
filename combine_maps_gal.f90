@@ -308,6 +308,16 @@ subroutine combine_maps_gal(do_regrd)
                flen = chr_lenb(basename)
                sum_weight = 0.0d0
 
+! Read in input rms
+               filename = basename(1:flen)//noise_ext(1:len_noise_ext)
+               p_sky => sky_weight
+               call read_fits_map(filename)
+               if (debug) then
+                  write(*,*) 'rms ',fcount
+                  call display_map(p_sky,maxsize,graph_adj,&
+                       cellsize,cellsize,0D0,0D0)         
+               end if
+
 ! Read in input map
                filename = basename(1:flen)//'.fits'
                if (debug2) then
@@ -318,16 +328,6 @@ subroutine combine_maps_gal(do_regrd)
                call read_fits_map(filename)
                if (debug) then
                   write(*,*) 'Map ',fcount
-                  call display_map(p_sky,maxsize,graph_adj,&
-                       cellsize,cellsize,0D0,0D0)         
-               end if
-
-! Read in input rms
-               filename = basename(1:flen)//noise_ext(1:len_noise_ext)
-               p_sky => sky_weight
-               call read_fits_map(filename)
-               if (debug) then
-                  write(*,*) 'rms ',fcount
                   call display_map(p_sky,maxsize,graph_adj,&
                        cellsize,cellsize,0D0,0D0)         
                end if
