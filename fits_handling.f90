@@ -745,43 +745,58 @@ contains
       obsdec = obsdec1
 
 ! Attempt to find beam parameters
+      bmaj=0d0
+      bmin=0d0
+      bpa=0d0
+
+! CASA headers have them as proper header values
+      status = 0
+      call ftgkye(iunit,'BMAJ',bmaj,ftcom,status)
+      status = 0
+      call ftgkye(iunit,'BMIN',bmin,ftcom,status)
+      status = 0
+      call ftgkye(iunit,'BPA',bpa,ftcom,status)
+
+      if ((bmaj.eq.0).or.(bmin.eq.0)) then
+! AIPS headers have them in the HISTORY
+! Search for 80-character keyword record containing BMAJ
+
+! Reset internal pointer to the top of the header
+        status=0
+        call ftgrec(iunit,0,record,status)
 
 ! Determine the number of keywords in the header
-      call ftghsp(iunit,nkeys2,nspace,status)     
-      
-! Search for 80-character keyword record containing BMAJ
-      i = nkeys2      
-      beam_found = .false.
-      do while((.not.beam_found).and.(i.gt.0))         
-        call ftgrec(iunit,i,record,status)
-
+        call ftghsp(iunit,nkeys2,nspace,status)     
+        i = nkeys2      
+        beam_found = .false.
+        
+        do while((.not.beam_found).and.(i.gt.0))         
+          call ftgrec(iunit,i,record,status)
 ! Parse RECORD for list of KEYS separated by spaces, return number NKEYS
-	call get_keys(record,nkeymax,keys,nkeys)
-        if (nkeys.ge.4) then
-          read(keys(4),*) match
-        endif
-	if (match.eq.'BMAJ=') then 
-           beam_found = .true.
-        end if
-	i = i-1
-      enddo
+      	  call get_keys(record,nkeymax,keys,nkeys)
+          if (nkeys.ge.4) then
+            read(keys(4),*) match
+          endif
+  	  if (match.eq.'BMAJ=') then 
+             beam_found = .true.
+          end if
+  	  i = i-1
+        enddo
 
-      if (beam_found) then
+        if (beam_found) then
 
 !  Read values of bmaj and bmin     
-         read(keys(4),*,err=10) bmaj_string
-         read(keys(6),*,err=10) bmin_string
-         read(keys(8),*,err=10) bpa_string
-         if((bmaj_string.eq.'BMAJ=').and.(bmin_string.eq.'BMIN=').and.&
-            (bpa_string.eq.'BPA=')) then
-            read(keys(5),*,err=10) bmaj
-            read(keys(7),*,err=10) bmin
-            read(keys(9),*,err=10) bpa	  
-         endif
-      else
-         bmaj = 0.0
-         bmin = 0.0
-         bpa = 0.0
+           read(keys(4),*,err=10) bmaj_string
+           read(keys(6),*,err=10) bmin_string
+           read(keys(8),*,err=10) bpa_string
+           if((bmaj_string.eq.'BMAJ=').and.(bmin_string.eq.'BMIN=').and.&
+              (bpa_string.eq.'BPA=')) then
+              read(keys(5),*,err=10) bmaj
+              read(keys(7),*,err=10) bmin
+              read(keys(9),*,err=10) bpa	  
+           endif
+        end if
+
       end if
 
 ! Close the file
