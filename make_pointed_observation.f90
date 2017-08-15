@@ -122,6 +122,8 @@ subroutine make_pointed_observation(idum)
       write(*,*) nvis,' out of ',nchan*n_samp*n_antennas*(n_antennas-1)/2,&
                       ' unshadowed'
 
+      write(*,*) 'Predicted (thermal) noise on map is', rms(1)/sqrt(dble(nvis))*1d3, 'mJy/beam'
+
       gcount = nvis / nchan
 
    case default
@@ -132,8 +134,11 @@ subroutine make_pointed_observation(idum)
 ! Add noise if necessary
    if (add_noise) then
       do i = 1, nvis
-         data_re(i) = data_re(i)+rms(i)/sqrt(2.)*gasdev(idum)
-         data_im(i) = data_im(i)+rms(i)/sqrt(2.)*gasdev(idum)
+         !data_re(i) = data_re(i)+rms(i)/sqrt(2.)*gasdev(idum)
+         !data_im(i) = data_im(i)+rms(i)/sqrt(2.)*gasdev(idum)
+         !Note factor of sqrt(2) was wrong - this now produces a map with the predicted noise level (YCP, 15/8/17)
+         data_re(i) = data_re(i)+rms(i)*gasdev(idum)
+         data_im(i) = data_im(i)+rms(i)*gasdev(idum)
          if (rms(i).ne.0.0) then
             weight(i) = 1/rms(i)**2
          else
