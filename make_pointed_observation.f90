@@ -10,7 +10,7 @@ subroutine make_pointed_observation(idum)
 
    character(len=fname_len) :: filename
    character*1 :: chr_epoch
-   real(kind=dp) :: psi, inc, rad, sindec
+   real(kind=dp) :: psi, inc, rad, sindec, ha_inc_s
    integer :: i, j, k, ndays, l_dir
    integer :: idate(3), base_id, date1
    real(dp)   :: obs_ut_start, obs_mjd_start, date2, jd, utsec
@@ -50,6 +50,7 @@ subroutine make_pointed_observation(idum)
       ha_stop = ha_stop*(deg2rad*15.0)
       ha_inc = ha_inc*3600.0d0/(15.0d0*deg2rad)
       call io_getd('Sample integration time (s) ','*',ha_inc,status)
+      ha_inc_s = ha_inc
       ha_inc = ha_inc/3600.0d0*15.0d0*deg2rad
       n_samp = 1+(ha_stop-ha_start)/ha_inc
       write(*,*) 'Taking ',n_samp,' samples'
@@ -92,7 +93,7 @@ subroutine make_pointed_observation(idum)
       do k = 1, n_samp
          ha = (ha_start+(k-1)*ha_inc)
          call calc_uvw(ha,dec,u_2d,v_2d,w_2d,shadow)
-         utsec = (real(k)*ha_step)-obs_ut_start
+         utsec = (real(k)*ha_inc_s)-obs_ut_start
          jd = obs_mjd_start + utsec*const_st2day + 2400000.5d0
          date1=nint(jd)
          date2=jd-date1
