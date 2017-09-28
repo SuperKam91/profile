@@ -245,8 +245,14 @@ contains
       if (status.ne.0) call printerror(status)
 	
 ! Write the optional keywords:
-      if (tel_name.eq.'LA') kword='AMI-LA'
-      if (tel_name.eq.'SA') kword='AMI-SA'
+      !Get telescope name
+      if (index(tel_name,'LA').gt.0) then
+         write (kword, '(A)') 'AMI-LA'
+      elseif (index(tel_name,'SA').gt.0) then
+         kword='AMI-SA'
+      else
+         kword='AMI-SA'
+      endif
       call ftpkys(unit,'OBJECT', 'Simul','Source name', status)
 !      call ftpkys(unit,'TELESCOP', 'Profile','Radio Telescope', status)
       
