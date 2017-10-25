@@ -128,8 +128,8 @@ module sz_globals
    real(kind=dp), save :: a_GNFW, b_GNFW, c_GNFW, c500_GNFW, Ytot, theta_s, f_GNFW
    real(kind=dp), save :: aEin_DM, rm2_DM, rhom2_DM !adapted for Einasto DM profile, needed globally kj 26/02/17
    real(kind=dp), save :: thetai
-   real(kind=dp), parameter :: thetalimit = 20.0
-   real(kind=dp), parameter :: thetamin = 0.2
+   real(kind=dp) :: thetalimit ! = 20.0
+   real(kind=dp) :: thetamin != 0.2
    real(dp), allocatable, dimension(:) :: logyintegrand,logtheta,logyarray
    real(kind=dp), save :: MT200, fg200, c200, r200, rp_GNFW, rs_DM
    real(kind=dp), parameter :: rmin=0.001, rmax=100.0
