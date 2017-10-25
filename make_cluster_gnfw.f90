@@ -60,6 +60,7 @@ subroutine make_cluster_gnfw
    real(kind=dp) :: Ein_GNFWgasVol !adapted for GM=6 kj 01/02/17
    real(kind=dp), external :: Ein_GNFWsphVolInt, R_func
    integer		   :: flag
+   real(kind=dp), external :: GNFW_YsphVolIntegral, Ytot_func
      
    a=a_GNFW
    b=b_GNFW
@@ -178,12 +179,20 @@ subroutine make_cluster_gnfw
 
 !  Calculate the spherical integral of the electron pressure
    Y_int = Gammafun((3.0-c)/a)*Gammafun((b-3.0)/a)/Gammafun((-c+b)/a)/a
-   call qtrap(GNFW_YsphVolIntegrand, 0d0, c500, eps, Y500_int)
+   !call qtrap(GNFW_YsphVolIntegrand, 0d0, c500, eps, Y500_int)
+   Y500_int = GNFW_YsphVolIntegral(c500)
    Y500 = Ytot/Y_int*Y500_int
    write(*,*) 'Y500 = Ytot/', Y_int/Y500_int
-   call qtrap(GNFW_YsphVolIntegrand, 0d0, 5d0*c500, eps, Y5R500_int)
+   !call qtrap(GNFW_YsphVolIntegrand, 0d0, 5d0*c500, eps, Y5R500_int)
+   Y5R500_int = GNFW_YsphVolIntegral(5d0*c500)
    Y5R500 = Ytot/Y_int*Y5R500_int
    write(*,*) 'Y5R500 = Ytot/', Y_int/Y5R500_int
+
+!  Set integration limits
+   call find_root(Ytot_func, c500, 1d-4, 100, thetalimit, flag)
+   thetalimit = thetalimit*theta_s
+   thetamin = cellsize/2d0/60d0
+   write(*,*) 'Integration limits are', thetamin, thetalimit, 'arcmin'
    
 !  Calculate the integral of the electron pressure over line of sight at the centre
    y0_int = Gammafun((1.0-c)/a)*Gammafun((b-1.0)/a)/Gammafun((-c+b)/a)/a
@@ -379,6 +388,43 @@ function GNFW_YsphVolIntegrand(r)
 
 end function GNFW_YsphVolIntegrand
 
+
+!========================================================
+
+function GNFW_YsphVolIntegral(r)
+
+  use sz_globals
+  use maths
+
+  implicit none
+  real*8   :: r, GNFW_YsphvolIntegral, eps
+  real*8, external :: GNFW_YsphVolIntegrand
+
+  eps=1d-4
+
+  call qtrap(GNFW_YsphVolIntegrand, 0d0, r, eps, GNFW_YsphVolIntegral)
+
+end function GNFW_YsphVolIntegral
+
+!=========================================================================
+
+function Ytot_func(r)
+
+  use sz_globals
+  use maths
+
+  implicit none
+  real*8    :: r, Ytot_func, eps_rel, Y_int
+  real*8, external :: GNFW_YsphVolIntegral
+
+  eps_rel = 0.05d0
+  Y_int = Gammafun((3.0-c_GNFW)/a_GNFW)*Gammafun((b_GNFW-3.0)/a_GNFW)&
+                    /Gammafun((-c_GNFW+b_GNFW)/a_GNFW)/a_GNFW
+
+  Ytot_func = Y_int/GNFW_YsphVolIntegral(r) - 1d0 - eps_rel
+
+end function Ytot_func
+  
 
 !=========================================================================
 
